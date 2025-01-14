@@ -23,12 +23,12 @@ function Card({ card, updateCardStatus }) {
     };
 
     return (
-        <div className="bg-white rounded-lg p-4 w-full cursor-pointer" onClick={openModal}>
+        <div className="bg-white rounded-xl p-4 w-full cursor-pointer shadow-md" onClick={openModal}>
             <h3 className="text-2xl bg-white font-bold text-gray-800">{card.name}</h3>
-            <p className="text-xl text-gray-600 bg-white">Время загрузки: {card.uploadTime}</p>
-            <p className="text-xl text-gray-600 bg-white">Бюджет: {card.budget}</p>
-            <p className="text-xl text-gray-600 bg-white">Дата: {card.date}</p>
-            <p className="text-xl text-gray-600 bg-white">Пользователь: {card.user}</p>
+            <p className="text-xl font-semibold text-gray-600 bg-white">Время загрузки: <span className="bg-white font-normal">{card.uploadTime}</span></p>
+            <p className="text-xl font-semibold text-gray-600 bg-white">Бюджет: <span className="bg-white font-normal">{card.budget}</span></p>
+            <p className="text-xl font-semibold text-gray-600 bg-white">Дата: <span className="bg-white font-normal">{card.date}</span></p>
+            <p className="text-xl font-semibold text-gray-600 bg-white">Пользователь: <span className="bg-white font-normal">{card.user}</span></p>
 
             {/* Modal that shows detailed information */}
             {isModalOpen && (
