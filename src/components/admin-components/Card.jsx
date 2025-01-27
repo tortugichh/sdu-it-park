@@ -23,7 +23,7 @@ function Card({ card, updateCardStatus }) {
     };
 
     return (
-        <div className="bg-white rounded-xl p-4 w-full cursor-pointer shadow-md" onClick={openModal}>
+        <div className="bg-white rounded-xl p-4 w-full cursor-pointer shadow-xl" onClick={openModal}>
             <h3 className="text-2xl bg-white font-bold text-gray-800">{card.name}</h3>
             <p className="text-xl font-semibold text-gray-600 bg-white">Время загрузки: <span className="bg-white font-normal">{card.uploadTime}</span></p>
             <p className="text-xl font-semibold text-gray-600 bg-white">Бюджет: <span className="bg-white font-normal">{card.budget}</span></p>

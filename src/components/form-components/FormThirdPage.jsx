@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 function FormThirdPage({ title, placeholders, allowFileUpload, maxFileSizeMB }) {
   const [formValues, setFormValues] = useState({});
@@ -8,29 +9,25 @@ function FormThirdPage({ title, placeholders, allowFileUpload, maxFileSizeMB }) 
   const [filePreviews, setFilePreviews] = useState([]);
   const navigate = useNavigate();
 
-  const MAX_TOTAL_FILE_SIZE_MB = maxFileSizeMB || 50; // Default limit: 50 MB
+  const BACKEND_URL = "https://crm-system-hkxd.onrender.com";
+
+  const MAX_TOTAL_FILE_SIZE_MB = maxFileSizeMB || 50;
   const MAX_TOTAL_FILE_SIZE_BYTES = MAX_TOTAL_FILE_SIZE_MB * 1024 * 1024;
 
-  const handleInputChange = (e, index) => {
+  const handleInputChange = (e, fieldName) => {
     const { value } = e.target;
     setFormValues((prevValues) => ({
       ...prevValues,
-      [index]: value,
+      [fieldName]: value,
     }));
   };
 
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
-
-    // Calculate the total size of already uploaded files
-    const currentTotalSize = uploadedFiles.reduce(
-      (total, file) => total + file.size,
-      0
-    );
-
-    // Filter files to only include those that fit within the remaining size limit
-    const validFiles = [];
+    const currentTotalSize = uploadedFiles.reduce((total, file) => total + file.size, 0);
+    
     let accumulatedSize = currentTotalSize;
+    const validFiles = [];
 
     for (const file of files) {
       if (accumulatedSize + file.size <= MAX_TOTAL_FILE_SIZE_BYTES) {
@@ -45,7 +42,6 @@ function FormThirdPage({ title, placeholders, allowFileUpload, maxFileSizeMB }) 
     if (validFiles.length > 0) {
       setUploadedFiles((prevFiles) => [...prevFiles, ...validFiles]);
 
-      // Generate previews if the files are images
       const newPreviews = validFiles.map((file) =>
         file.type.startsWith("image/") ? URL.createObjectURL(file) : null
       );
@@ -54,7 +50,6 @@ function FormThirdPage({ title, placeholders, allowFileUpload, maxFileSizeMB }) 
   };
 
   const handleClearFiles = () => {
-    // Clear files and revoke object URLs to avoid memory leaks
     filePreviews.forEach((url) => URL.revokeObjectURL(url));
     setUploadedFiles([]);
     setFilePreviews([]);
@@ -62,17 +57,14 @@ function FormThirdPage({ title, placeholders, allowFileUpload, maxFileSizeMB }) 
 
   const validateForm = () => {
     const errors = {};
-    placeholders.forEach((placeholder, index) => {
-      const value = formValues[index] || "";
+    placeholders.forEach((placeholder) => {
+      const fieldName = placeholder.toLowerCase().replace(/\s+/g, "_");
+      const value = formValues[fieldName] || "";
 
       if (!value.trim()) {
-        errors[index] = `${placeholder} is required`;
+        errors[fieldName] = `${placeholder} is required`;
       }
     });
-
-    if (allowFileUpload && uploadedFiles.length === 0) {
-      errors.files = "At least one file must be uploaded";
-    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -80,32 +72,33 @@ function FormThirdPage({ title, placeholders, allowFileUpload, maxFileSizeMB }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log("Form submitted successfully:", formValues, uploadedFiles);
 
-      try {
-        // Replace with your API endpoint
-        const response = await fetch("/api/submit-form", {
-          method: "POST",
-          body: JSON.stringify({
-            ...formValues,
-            files: uploadedFiles,
-          }),
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (response.ok) {
-          console.log("Data successfully sent to the backend.");
-        } else {
-          console.error("Failed to submit the form.");
-        }
-      } catch (error) {
-        console.error("Error submitting the form:", error);
-      }
-    } else {
+    if (!validateForm()) {
       console.log("Validation errors:", formErrors);
+      return;
+    }
+
+    const formData = new FormData();
+    
+    placeholders.forEach((placeholder) => {
+      const fieldName = placeholder.toLowerCase().replace(/\s+/g, "_");
+      formData.append(fieldName, formValues[fieldName] || "");
+    });
+
+    uploadedFiles.forEach((file) => {
+      formData.append("attachments", file);
+    });
+
+    try {
+      const response = await axios.post(`${BACKEND_URL}/api/projects/create/`, formData);
+
+      if (response.status === 201) {
+        console.log("Project successfully created:", response.data);
+        navigate("/success");
+      }
+    } catch (error) {
+      console.error("Error submitting project:", error.response?.data || error);
+      setFormErrors(error.response?.data || {});
     }
   };
 
@@ -117,24 +110,28 @@ function FormThirdPage({ title, placeholders, allowFileUpload, maxFileSizeMB }) 
         </header>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 bg-white">
-          {placeholders.map((placeholder, index) => (
-            <div key={index} className="flex flex-col">
-              <textarea
-                placeholder={placeholder}
-                value={formValues[index] || ""}
-                onChange={(e) => handleInputChange(e, index)}
-                rows="4"
-                className={`border rounded-md p-3 sm:p-4 text-gray-700 focus:outline-none focus:ring-2 ${
-                  formErrors[index]
-                    ? "border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:ring-blue-500"
-                }`}
-              ></textarea>
-              {formErrors[index] && (
-                <span className="text-red-500 text-sm mt-1 bg-white">{formErrors[index]}</span>
-              )}
-            </div>
-          ))}
+          {placeholders.map((placeholder, index) => {
+            const fieldName = placeholder.toLowerCase().replace(/\s+/g, "_");
+
+            return (
+              <div key={index} className="flex flex-col">
+                <textarea
+                  placeholder={placeholder}
+                  value={formValues[fieldName] || ""}
+                  onChange={(e) => handleInputChange(e, fieldName)}
+                  rows="4"
+                  className={`border rounded-md p-3 sm:p-4 text-gray-700 focus:outline-none focus:ring-2 ${
+                    formErrors[fieldName]
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-300 focus:ring-blue-500"
+                  }`}
+                ></textarea>
+                {formErrors[fieldName] && (
+                  <span className="text-red-500 text-sm mt-1 bg-white">{formErrors[fieldName]}</span>
+                )}
+              </div>
+            );
+          })}
 
           {allowFileUpload && (
             <div className="flex flex-col bg-white">
@@ -183,10 +180,6 @@ function FormThirdPage({ title, placeholders, allowFileUpload, maxFileSizeMB }) 
                   Clear Files
                 </button>
               )}
-
-              <div className="mt-2 text-sm text-gray-600 bg-white">
-                {`Total uploaded size: ${(uploadedFiles.reduce((total, file) => total + file.size, 0) / (1024 * 1024)).toFixed(2)} MB of ${MAX_TOTAL_FILE_SIZE_MB} MB`}
-              </div>
             </div>
           )}
 

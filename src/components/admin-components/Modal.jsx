@@ -1,18 +1,15 @@
 import React, { useEffect } from 'react';
 
 function Modal({ onClose, project, onAccept, onReject }) {
-    // Close the modal when clicking outside of it
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (e.target.classList.contains('modal-overlay')) {
-                onClose(); // Call the onClose function to close the modal
+                onClose(); 
             }
         };
 
-        // Attach event listener to document
         document.addEventListener('click', handleClickOutside);
 
-        // Cleanup listener on component unmount
         return () => {
             document.removeEventListener('click', handleClickOutside);
         };
@@ -25,7 +22,7 @@ function Modal({ onClose, project, onAccept, onReject }) {
                     onClick={onClose}
                     className="absolute top-2 right-2 text-xl text-gray-500 hover:text-gray-700"
                 >
-                    &#10005; {/* This is the "X" close button */}
+                    &#10005;
                 </button>
                 <h2 className="text-3xl font-bold bg-white">{project.name}</h2>
                 <p className="text-xl font-semibold mt-4 bg-white">Время загрузки: <span className="bg-white font-normal">{project.uploadTime}</span></p>
